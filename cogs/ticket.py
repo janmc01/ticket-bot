@@ -9,6 +9,15 @@ from discord.commands import slash_command, Option
 
 claimed_tickets = {}
 
+CATEGORY_ROLES = {
+            "Support": "Discord Staff",
+            "Report": "Discord Staff",
+            "Minecraft Support": "MC Staff",
+            "Claim Media role": "head of ticket",
+            "Partnership": "head of ticket",
+            "Other": "Discord Staff"
+        }
+
 def load_data(self):
     with open("ticket_data.json", "r") as f:
         return json.load(f)
@@ -35,12 +44,13 @@ class ticket(commands.Cog):
         
         ticket_embed = discord.Embed(
             title="Ticket | Support",
-            description="Select the category of your issue to create a ticket",
+            description="Select a category to create a ticket",
             color=discord.Color.yellow()
         )
 
+        await ctx.response.defer(ephemeral=True)
         await ctx.channel.send(embed=ticket_embed, view=ticketselect())
-        await ctx.respond("The ticket panel has been created!", ephemeral=True)
+        #await ctx.respond("The ticket panel has been created!", ephemeral=True)
 
     
 
@@ -76,6 +86,14 @@ class ticketselect(discord.ui.View):
 
     async def callback(self, select, interaction):
         category = select.values[0]
+
+        role_name = CATEGORY_ROLES.get(category)
+        role = discord.utils.get(interaction.guild.roles, name=role_name)
+
+        if role:
+            content = role.mention
+        else:
+            content = "No staff role found"
 
         channel_category = interaction.channel.category
 
@@ -160,7 +178,11 @@ class ticketselect(discord.ui.View):
 
 
         staff_role = discord.utils.get(interaction.guild.roles, name="Discord Staff")
-        await channel.send(f"{staff_role.mention}", embed=ticket_welcome_embed, view=ticketwelcome())
+        await channel.send(
+            f"{content}", 
+            embed=ticket_welcome_embed, 
+            view=ticketwelcome()
+            )
 
 
 
@@ -198,19 +220,39 @@ class ticketwelcome(discord.ui.View):
 
     @discord.ui.button(label="Claim", style=discord.ButtonStyle.green, custom_id="claim_ticket")
     async def claim(self, button, interaction):
+        
+
 
         data = load_data(self)
         claims = data["claims"]
 
-        staff_role = discord.utils.get(interaction.guild.roles, name="Discord Staff")
 
+        #check for staff role
+        staff_role = discord.utils.get(interaction.guild.roles, name="Discord Staff")
         if staff_role not in interaction.user.roles:
             return await interaction.response.send_message("You are not staff.", ephemeral=True)
 
         channel_id = str(interaction.channel.id)
 
-        if channel_id in claims:
+        if channel_id in claims:            
             user = interaction.guild.get_member(claims[channel_id])
+            if user == interaction.user:
+
+                del claims[channel_id]
+                save_data(self, data)
+
+                await interaction.channel.set_permissions(discord.utils.get(interaction.guild.roles, name="Discord Staff"), read_messages=True, send_messages=True)
+                await interaction.channel.set_permissions(interaction.user, read_messages=True, send_messages=False)
+
+                button.label = "Claim"
+                button.style = discord.ButtonStyle.green
+                await interaction.message.edit(view=self)
+
+                return await interaction.response.send_message(
+                    f"{interaction.user.mention} unclaimed the ticket."
+                )
+
+
             return await interaction.response.send_message(
                 f"Ticket already claimed by {user.mention}",
                 ephemeral=True
@@ -222,39 +264,10 @@ class ticketwelcome(discord.ui.View):
         await interaction.channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
         await interaction.channel.set_permissions(discord.utils.get(interaction.guild.roles, name="Discord Staff"), read_messages=True, send_messages=False)
 
+        button.label = "Unclaim"
+        button.style = discord.ButtonStyle.gray
 
+        await interaction.message.edit(view=self)
         await interaction.response.send_message(
             f"Ticket claimed by {interaction.user.mention}"
         )
-
-    @discord.ui.button(label="Unclaim", style=discord.ButtonStyle.gray, custom_id="unclaim_ticket")
-    async def unclaim(self, button, interaction):
-
-        data = load_data(self)
-        claims = data["claims"]
-
-        channel_id = str(interaction.channel.id)
-
-        if channel_id not in claims:
-            return await interaction.response.send_message(
-                "This ticket is not claimed.",
-                ephemeral=True
-            )
-
-        if claims[channel_id] != interaction.user.id:
-            return await interaction.response.send_message(
-                "You did not claim this ticket.",
-                ephemeral=True
-            )
-
-        del claims[channel_id]
-        save_data(self, data)
-
-        await interaction.channel.set_permissions(discord.utils.get(interaction.guild.roles, name="Discord Staff"), read_messages=True, send_messages=True)
-        await interaction.channel.set_permissions(interaction.user, read_messages=True, send_messages=False)
-
-
-        await interaction.response.send_message(
-            f"{interaction.user.mention} unclaimed the ticket."
-        )
-
