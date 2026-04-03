@@ -7,8 +7,6 @@ from discord.ui import View
 from discord.commands import slash_command, Option
 
 
-claimed_tickets = {}
-
 CATEGORY_ROLES = {
             "Support": "Discord Staff",
             "Report": "Discord Staff",
