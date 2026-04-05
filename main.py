@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ext import bridge
 from discord.commands import Option
 import os
 from dotenv import load_dotenv
@@ -7,12 +8,13 @@ from dotenv import load_dotenv
 intents = discord.Intents.all()
 
 
-status = discord.Status.dnd
+status = discord.Status.online
 activity = discord.CustomActivity("/help")
 
-bot = discord.Bot(intents=intents, 
+bot = bridge.Bot(intents=intents, 
                   status=status,
-                  activity=activity
+                  activity=activity,
+                  command_prefix="t!"
                   )
 
 

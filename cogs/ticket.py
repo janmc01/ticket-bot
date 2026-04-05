@@ -7,8 +7,6 @@ from discord.ui import View
 from discord.commands import slash_command, Option
 
 
-claimed_tickets = {}
-
 CATEGORY_ROLES = {
             "Support": "Discord Staff",
             "Report": "Discord Staff",
@@ -50,7 +48,7 @@ class ticket(commands.Cog):
 
         await ctx.response.defer(ephemeral=True)
         await ctx.channel.send(embed=ticket_embed, view=ticketselect())
-        #await ctx.respond("The ticket panel has been created!", ephemeral=True)
+        await ctx.respond("The ticket panel has been created!", ephemeral=True)
 
     
 
