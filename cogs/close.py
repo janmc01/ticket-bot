@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, bridge
 from discord.commands import slash_command, Option
 import asyncio
 import json
@@ -24,15 +24,15 @@ class close(discord.Cog):
         self.bot.add_view(closebutton())
 
 
-    @slash_command(name="close", description="Closes the current ticket")
+    @bridge.bridge_command(name="close", description="Closes the current ticket")
     async def close(self, ctx):
 
         data = load_data(self)
         tickets = data["tickets"]
 
         #Check if the channel is a ticket channel
-        if not ctx.channel.id in tickets:
-            return await ctx.response.send_message("This command can only be used in a ticket channel.", ephemeral=True)
+        if not str(ctx.channel.id) in tickets:
+            return await ctx.respond("This command can only be used in a ticket channel.", ephemeral=True)
 
 
         embed = discord.Embed(

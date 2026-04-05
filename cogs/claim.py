@@ -24,9 +24,11 @@ class claim(commands.Cog):
         data = load_data(self)
         claims = data["claims"]
         tickets = data["tickets"]
+        channel_id = str(ctx.channel.id)
+
 
         #Check if the channel is a ticket channel
-        if not ctx.channel.id in tickets:
+        if not channel_id in tickets:
             return await ctx.response.send_message("This command can only be used in a ticket channel.", ephemeral=True)
 
 
@@ -36,7 +38,6 @@ class claim(commands.Cog):
             return await ctx.response.send_message("You are not staff.", ephemeral=True)
 
 
-        channel_id = str(ctx.channel.id)
 
         if channel_id in claims:            
             user = ctx.guild.get_member(claims[channel_id])
