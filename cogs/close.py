@@ -3,6 +3,7 @@ from discord.ext import commands, bridge
 from discord.commands import slash_command, Option
 import asyncio
 import json
+from utils import send_close_dm
 
 def load_data(self):
     with open("ticket_data.json", "r") as f:
@@ -19,20 +20,22 @@ class close(discord.Cog):
 
 
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.bot.add_view(closebutton())
-
-
     @bridge.bridge_command(name="close", description="Closes the current ticket")
     async def close(self, ctx):
 
+
+
         data = load_data(self)
+        channel_id = str(ctx.channel.id)
         tickets = data["tickets"]
 
         #Check if the channel is a ticket channel
         if not str(ctx.channel.id) in tickets:
             return await ctx.respond("This command can only be used in a ticket channel.", ephemeral=True)
+
+        user_id = data["tickets"][channel_id]
+        user = self.bot.get_user(user_id) if user_id else None
+
 
 
         embed = discord.Embed(
@@ -40,7 +43,8 @@ class close(discord.Cog):
             description=f"Do You Want To Close The Ticket? \n{ctx.author.mention}",
             color=discord.Color.red()
         )
-        await ctx.respond(embed=embed, view=closebutton())
+        
+        await ctx.respond(embed=embed, view=closebutton(user))
             
 
 def setup(bot):
@@ -49,8 +53,9 @@ def setup(bot):
 
 
 class closebutton(discord.ui.View):
-    def __init__(self):
+    def __init__(self, user):
         super().__init__(timeout=None)
+        self.user = user
 
 
 
@@ -64,15 +69,14 @@ class closebutton(discord.ui.View):
 
         channel_id = str(interaction.channel.id)
 
-        if channel_id in data["tickets"]:
-            del data["tickets"][channel_id]
-
-        if channel_id in data["claims"]:
-            del data["claims"][channel_id]
-
-        save_data(self, data)
-
-
+        await send_close_dm(interaction, self.user)
         await interaction.response.send_message("The ticket will be closed in 5 seconds.", ephemeral=True)
         await asyncio.sleep(5)
+
+        if channel_id in data["tickets"]:
+            del data["tickets"][channel_id]
+        if channel_id in data["claims"]:
+            del data["claims"][channel_id]
+        save_data(self, data)
+
         await interaction.channel.delete()
