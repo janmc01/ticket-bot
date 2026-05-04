@@ -99,10 +99,6 @@ class ticketselect(discord.ui.View):
         data = load_data(self)
 
 
-        global user
-        user = interaction.user
-
-
         role_name = CATEGORY_ROLES.get(category)
         role = discord.utils.get(interaction.guild.roles, name=role_name)
 
@@ -242,6 +238,8 @@ class ticketwelcome(discord.ui.View):
         if staff_role not in interaction.user.roles:
             return await interaction.response.send_message("You are not staff.", ephemeral=True)
 
+        await interaction.response.defer(ephemeral=True)
+
         channel_id = str(interaction.channel.id)
 
         if channel_id in claims:            
@@ -258,12 +256,12 @@ class ticketwelcome(discord.ui.View):
                 button.style = discord.ButtonStyle.green
                 await interaction.message.edit(view=self)
 
-                return await interaction.response.send_message(
+                return await interaction.followup.send(
                     f"{interaction.user.mention} unclaimed the ticket."
                 )
 
 
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 f"Ticket already claimed by {user.mention}",
                 ephemeral=True
             )
@@ -278,6 +276,6 @@ class ticketwelcome(discord.ui.View):
         button.style = discord.ButtonStyle.gray
 
         await interaction.message.edit(view=self)
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"Ticket claimed by {interaction.user.mention}"
         )

@@ -1,10 +1,10 @@
 import discord
 import json
-def load_data(self):
+def load_data():
     with open("ticket_data.json", "r") as f:
         return json.load(f)
 
-def save_data(self, data):
+def save_data(data):
     with open("ticket_data.json", "w") as f:
         json.dump(data, f, indent=4)
 
@@ -18,6 +18,12 @@ async def send_close_dm(interaction, user):
 
     if channel_id not in tickets:
         return False 
+    
+    user_id = data["tickets"].get(channel_id)
+    if user_id:
+        user = interaction.guild.get_member(user_id)
+        if user is None:
+            user = await interaction.client.fetch_user(user_id)
 
     embed_dm = discord.Embed(
         title="Ticket Closed",
