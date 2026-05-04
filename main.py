@@ -12,10 +12,10 @@ status = discord.Status.online
 activity = discord.CustomActivity("/help")
 
 bot = bridge.Bot(intents=intents, 
-                  status=status,
-                  activity=activity,
-                  command_prefix="t!"
-                  )
+                status=status,
+                activity=activity,
+                command_prefix="§"
+                )
 
 
 @bot.event

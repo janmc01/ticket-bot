@@ -7,12 +7,16 @@ from discord.ui import View
 from discord.commands import slash_command, Option
 
 
+from utils import send_close_dm
+
+user = None
+
 CATEGORY_ROLES = {
             "Support": "Discord Staff",
             "Report": "Discord Staff",
-            "Minecraft Support": "MC Staff",
-            "Claim Media role": "head of ticket",
-            "Partnership": "head of ticket",
+            "Minecraft Support": "Owner",
+            "Claim Media role": "Discord Staff",
+            "Partnership": "Owner",
             "Other": "Discord Staff"
         }
 
@@ -39,6 +43,9 @@ class ticket(commands.Cog):
     @slash_command(description="Creates a ticket panel")
     async def panel(self, ctx):
 
+        staff_role = discord.utils.get(ctx.guild.roles, name="Discord Staff")
+        if staff_role not in ctx.user.roles:
+            return await ctx.response.send_message("You are not a staff member!", ephemeral=True)
         
         ticket_embed = discord.Embed(
             title="Ticket | Support",
@@ -46,9 +53,8 @@ class ticket(commands.Cog):
             color=discord.Color.yellow()
         )
 
-        await ctx.response.defer(ephemeral=True)
         await ctx.channel.send(embed=ticket_embed, view=ticketselect())
-        await ctx.respond("The ticket panel has been created!", ephemeral=True)
+        await ctx.respond("Ticket panel created!", ephemeral=True)
 
     
 
@@ -71,6 +77,7 @@ class ticketselect(discord.ui.View):
             discord.SelectOption(label="Minecraft Support", description="Report issues or ask for help related to the Minecraft server."),
             discord.SelectOption(label="Claim Media role", description="Request the media role if you create content about the server."),
             discord.SelectOption(label="Partnership", description="Inquire about partnership opportunities with our server."),
+            discord.SelectOption(label="Apply for Staff", description="Apply to become a staff member on our server."),
             discord.SelectOption(label="Other", description="Other issues or questions")
         ]
 
@@ -84,6 +91,14 @@ class ticketselect(discord.ui.View):
 
     async def callback(self, select, interaction):
         category = select.values[0]
+        guild_id = str(interaction.guild.id)
+
+        data = load_data(self)
+
+
+        global user
+        user = interaction.user
+
 
         role_name = CATEGORY_ROLES.get(category)
         role = discord.utils.get(interaction.guild.roles, name=role_name)
@@ -95,21 +110,13 @@ class ticketselect(discord.ui.View):
 
         channel_category = interaction.channel.category
 
-        
-        
-        #Old ticket naming system, replaced with ticket ID generation to avoid issues with duplicate names and to allow more than 2 tickets per user
-
-        # existing = discord.utils.get(interaction.guild.text_channels, name=f"ticket-{interaction.user.name}")
-        # if existing:
-        #     existing2 = discord.utils.get(interaction.guild.text_channels, name=f"ticket-{interaction.user.name}_2")
-        #     if existing2:
-        #         await interaction.response.send_message("You already have 2 open tickets! Please close one before creating a new one.", ephemeral=True)
-        #         return
-
-        #     else:
-        #         channel_name = f"ticket-{interaction.user.name}_2"
-        # else:
-        #         channel_name = f"ticket-{interaction.user.name}"
+        if interaction.user.id in data["blacklist"][guild_id]:
+            embed=discord.Embed(
+                title="Ticket Creation Failed",
+                description=f"You are blacklisted from creating tickets.\n**Reason:** {data['blacklist'][guild_id][interaction.user.id]['reason']}",
+                color=discord.Color.red()
+            )
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
         # Check for existing open tickets
@@ -202,17 +209,16 @@ class ticketwelcome(discord.ui.View):
 
         channel_id = str(interaction.channel.id)
 
-        if channel_id in data["tickets"]:
-            del data["tickets"][channel_id]
-
-        if channel_id in data["claims"]:
-            del data["claims"][channel_id]
-
-        save_data(self, data)
-
-
+        await send_close_dm(interaction, user)
         await interaction.response.send_message("The ticket will be closed in 5 seconds.", ephemeral=True)
         await asyncio.sleep(5)
+
+        if channel_id in data["tickets"]:
+            del data["tickets"][channel_id]
+        if channel_id in data["claims"]:
+            del data["claims"][channel_id]
+        save_data(self, data)
+
         await interaction.channel.delete()
 
 
