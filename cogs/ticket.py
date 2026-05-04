@@ -17,6 +17,7 @@ CATEGORY_ROLES = {
             "Minecraft Support": "Owner",
             "Claim Media role": "Discord Staff",
             "Partnership": "Owner",
+            "Apply for Staff": "Owner",
             "Other": "Discord Staff"
         }
 
@@ -42,6 +43,8 @@ class ticket(commands.Cog):
 
     @slash_command(description="Creates a ticket panel")
     async def panel(self, ctx):
+
+
 
         staff_role = discord.utils.get(ctx.guild.roles, name="Discord Staff")
         if staff_role not in ctx.user.roles:
@@ -109,6 +112,9 @@ class ticketselect(discord.ui.View):
             content = "No staff role found"
 
         channel_category = interaction.channel.category
+
+        if guild_id not in data["blacklist"]:
+            data["blacklist"][guild_id] = {}
 
         if interaction.user.id in data["blacklist"][guild_id]:
             embed=discord.Embed(
