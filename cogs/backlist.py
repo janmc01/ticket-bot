@@ -104,11 +104,15 @@ class blacklist_view(discord.ui.View):
             del data["blacklist"][guild_id][user_id]
             save_data(self, data)
 
+
             embed = discord.Embed(
                 title="Blacklist Update",
                 description=f"**{self.user.mention}** has been removed from the blacklist by {interaction.user.mention}.",
                 color=discord.Color.green()
+                
             )
+
+            await interaction.response.edit_message(embed=embed, view=None)
 
             try:
 
@@ -122,7 +126,7 @@ class blacklist_view(discord.ui.View):
                 await interaction.response.send_message(f"Could not send DM to {self.user.mention}, but they have been removed from the blacklist.", ephemeral=True)
 
 
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            #await interaction.response.send_message(embed=embed, ephemeral=True)
         else:
             await interaction.response.send_message("User is not in the blacklist.", ephemeral=True)
  
