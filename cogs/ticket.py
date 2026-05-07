@@ -6,7 +6,6 @@ from discord.ext import commands
 from discord.ui import View
 from discord.commands import slash_command, Option
 
-
 from utils import send_close_dm
 
 user = None
@@ -95,6 +94,8 @@ class ticketselect(discord.ui.View):
     async def callback(self, select, interaction):
         category = select.values[0]
         guild_id = str(interaction.guild.id)
+        user_id = str(interaction.user.id)
+
 
         data = load_data(self)
 
@@ -109,13 +110,20 @@ class ticketselect(discord.ui.View):
 
         channel_category = interaction.channel.category
 
+        blacklist = data.get("blacklist", {})
+
         if guild_id not in data["blacklist"]:
             data["blacklist"][guild_id] = {}
 
-        if interaction.user.id in data["blacklist"][guild_id]:
+
+        if user_id in blacklist[guild_id]:
+
+            user_data = blacklist[guild_id][user_id]
+            reason = user_data.get("reason", "Kein Grund angegeben")
+
             embed=discord.Embed(
                 title="Ticket Creation Failed",
-                description=f"You are blacklisted from creating tickets.\n**Reason:** {data['blacklist'][guild_id][interaction.user.id]['reason']}",
+                description=f"You are blacklisted from creating tickets.\n**Reason:** {reason}",
                 color=discord.Color.red()
             )
             return await interaction.response.send_message(embed=embed, ephemeral=True)
